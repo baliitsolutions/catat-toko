@@ -1,0 +1,8 @@
+{
+  "appId": "id.balitsolutions.catattoko",
+  "appName": "Catat Toko",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F2F6F4"
+  }
+}

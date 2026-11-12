@@ -1,0 +1,50 @@
+{
+  "name": "catat-toko",
+  "version": "1.0.0",
+  "description": "Aplikasi pencatatan toko UMKM: kasir, utang-piutang, buku kas, stok, dan laporan.",
+  "author": "Bali IT Solutions",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "android:add": "cap add android",
+    "android:icons": "capacitor-assets generate --android --assetPath assets",
+    "android:sync": "cap sync android",
+    "keygen": "node tools/keygen.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/app": "6.0.2",
+    "@capacitor/browser": "6.0.4",
+    "@capacitor/core": "6.2.0",
+    "@capacitor/filesystem": "6.0.2",
+    "@capacitor/share": "6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "6.2.0",
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "id.balitsolutions.catattoko",
+    "productName": "Catat Toko",
+    "copyright": "Bali IT Solutions",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "www/**/*", "assets/icon.png", "package.json"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.png",
+      "artifactName": "CatatToko-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Catat Toko"
+    }
+  }
+}
