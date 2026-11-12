@@ -7,10 +7,11 @@ window.CATAT_CONFIG = {
   LICENSE_ENABLED: true,
   TRIAL_DAYS: 30,
 
-  // WAJIB diganti dengan kata rahasia Anda sendiri (bebas, minimal 16 huruf).
-  // Kata rahasia ini dipakai tools/keygen.js untuk membuat kode aktivasi.
-  // Jangan bagikan ke siapa pun. Jika diganti, kode aktivasi lama tidak berlaku lagi.
-  LICENSE_SECRET: "GANTI-DENGAN-KATA-RAHASIA-ANDA-2026",
+  // KUNCI PUBLIK dari aplikasi "Pembuat Lisensi Catat Toko" di komputer Anda
+  // (menu Kunci → Salin kunci publik). Kunci publik aman dibagikan: dengan
+  // kunci ini aplikasi hanya bisa MEMERIKSA kode aktivasi, tidak bisa membuatnya.
+  // Selama masih kosong, masa coba tetap berjalan tetapi kode aktivasi belum bisa dipakai.
+  LICENSE_PUBLIC_KEY: "",
 
   // Kontak penjual yang tampil di layar aktivasi.
   KONTAK_NAMA: "Bali IT Solutions",

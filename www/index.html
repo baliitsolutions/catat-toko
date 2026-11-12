@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0E7A5C">
 <title>Catat Toko</title>
 <script src="config.js"></script>
+<script src="vendor/nacl-fast.min.js"></script>
 <style>
 @font-face{font-family:"Plus Jakarta Sans";font-weight:400;font-display:swap;src:url(fonts/plus-jakarta-sans-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:"Plus Jakarta Sans";font-weight:500;font-display:swap;src:url(fonts/plus-jakarta-sans-latin-500-normal.woff2) format("woff2")}
@@ -187,7 +188,7 @@ const ico=(k,cls)=>'<svg class="i '+(cls||"")+'" viewBox="0 0 24 24" aria-hidden
 const S={mode:"loading",toko:{nama:"Toko Saya",pemilik:"",hp:"",minStok:5},produk:[],jual:[],kas:[],pelanggan:[],utang:[],
   cart:{},tab:"beranda",periode:"hari",q:"",kasFilter:"semua",loaded:{},stale:false};
 const COLS=["produk","jual","kas","pelanggan","utang"];
-const CFG=Object.assign({APP_NAME:"Catat Toko",TRIAL_DAYS:30,LICENSE_ENABLED:true,LICENSE_SECRET:"",KONTAK_WA:"",KONTAK_NAMA:""},window.CATAT_CONFIG||{});
+const CFG=Object.assign({APP_NAME:"Catat Toko",TRIAL_DAYS:30,LICENSE_ENABLED:true,LICENSE_PUBLIC_KEY:"",KONTAK_WA:"",KONTAK_NAMA:""},window.CATAT_CONFIG||{});
 const KEY_DATA="catattoko.data.v1";
 
 /* ---------- data layer (disimpan di perangkat) ---------- */
@@ -226,44 +227,35 @@ function openExternal(url){
 }
 
 /* ---------- lisensi ---------- */
-function sha256(ascii){
-  function rr(v,a){return(v>>>a)|(v<<(32-a))}
-  const mp=Math.pow,mw=mp(2,32);let res="",words=[];const bl=ascii.length*8;
-  const hash=[],k=[];let pc=0;const ic={};
-  for(let c=2;pc<64;c++){if(!ic[c]){for(let i=0;i<313;i+=c)ic[i]=c;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0}}
-  ascii=unescape(encodeURIComponent(ascii));const L=ascii.length*8;
-  ascii+="\x80";while(ascii.length%64-56)ascii+="\x00";
-  for(let i=0;i<ascii.length;i++){const j=ascii.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8}
-  words[words.length]=((L/mw)|0);words[words.length]=(L);
-  let h=hash.slice(0,8);
-  for(let j=0;j<words.length;){const w=words.slice(j,j+=16);const oh=h;h=h.slice(0,8);
-    for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2];const a=h[0],e=h[4];
-      const t1=h[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&h[5])^((~e)&h[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
-      const t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&h[1])^(a&h[2])^(h[1]&h[2]));
-      h=[(t1+t2)|0].concat(h);h[4]=(h[4]+t1)|0}
-    for(let i=0;i<8;i++)h[i]=(h[i]+oh[i])|0}
-  for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(h[i]>>(j*8))&255;res+=((b<16)?0:"")+b.toString(16)}
-  return res;
+/* Kode lisensi = tanda tangan Ed25519 atas "CATATTOKO|<ID perangkat>", ditulis dalam base32 Crockford.
+   Aplikasi ini hanya menyimpan KUNCI PUBLIK, jadi tidak bisa membuat kode sendiri. */
+const B32="0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function b32enc(bytes){let bits=0,val=0,out="";for(const b of bytes){val=(val<<8)|b;bits+=8;while(bits>=5){out+=B32[(val>>>(bits-5))&31];bits-=5}}if(bits>0)out+=B32[(val<<(5-bits))&31];return out}
+function b32dec(str){const s=String(str||"").toUpperCase().replace(/O/g,"0").replace(/[IL]/g,"1").replace(/[^0-9A-Z]/g,"");let bits=0,val=0;const out=[];
+  for(const ch of s){const i=B32.indexOf(ch);if(i<0)return null;val=((val<<5)|i)&0xffff;bits+=5;if(bits>=8){out.push((val>>>(bits-8))&255);bits-=8}}return new Uint8Array(out)}
+function licMsg(dev){return new Uint8Array(new TextEncoder().encode("CATATTOKO|"+dev))}
+function verifyKey(code,dev){
+  try{if(!window.nacl||!CFG.LICENSE_PUBLIC_KEY)return false;const pub=b32dec(CFG.LICENSE_PUBLIC_KEY);const sig=b32dec(code);
+    if(!pub||pub.length!==32||!sig||sig.length<64)return false;return window.nacl.sign.detached.verify(licMsg(dev),sig.slice(0,64),pub)}catch(e){return false}
 }
 function deviceId(){
   let d=null;try{d=localStorage.getItem("catattoko.device")}catch(_){}
   if(!d){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let r="";const a=new Uint32Array(12);crypto.getRandomValues(a);for(let i=0;i<12;i++){r+=ch[a[i]%ch.length];if(i===3||i===7)r+="-"}d=r;try{localStorage.setItem("catattoko.device",d)}catch(_){}}
   return d;
 }
-function expectedKey(dev){const h=sha256(dev+"|"+CFG.LICENSE_SECRET).slice(0,20).toUpperCase();return h.match(/.{5}/g).join("-")}
 function licState(){
   if(!CFG.LICENSE_ENABLED)return{status:"aktif",sisa:Infinity};
   const dev=deviceId();let key="",first=0;
   try{key=localStorage.getItem("catattoko.key")||"";first=Number(localStorage.getItem("catattoko.first"))||0}catch(_){}
   if(!first){first=Date.now();try{localStorage.setItem("catattoko.first",String(first))}catch(_){}}
-  if(key&&key===expectedKey(dev))return{status:"aktif",sisa:Infinity,dev};
+  if(key&&verifyKey(key,dev))return{status:"aktif",sisa:Infinity,dev};
   const sisa=Math.ceil((first+CFG.TRIAL_DAYS*DAY-Date.now())/DAY);
   return{status:sisa>0?"trial":"habis",sisa:Math.max(0,sisa),dev};
 }
 function activate(input){
-  const k=String(input||"").toUpperCase().replace(/[^0-9A-F]/g,"");const fmt=(k.match(/.{1,5}/g)||[]).join("-");
-  if(fmt!==expectedKey(deviceId()))return false;
-  try{localStorage.setItem("catattoko.key",fmt)}catch(_){}return true;
+  const code=String(input||"").toUpperCase().replace(/[^0-9A-Z]/g,"");
+  if(!verifyKey(code,deviceId()))return false;
+  try{localStorage.setItem("catattoko.key",code)}catch(_){}return true;
 }
 function waLisensi(){const n=waNum(CFG.KONTAK_WA);return n?"https://wa.me/"+n+"?text="+encodeURIComponent("Halo, saya ingin aktivasi "+CFG.APP_NAME+". ID perangkat saya: "+deviceId()):""}
 function vLock(){
@@ -273,7 +265,7 @@ function vLock(){
   '<div class="stat"><span class="label">ID perangkat</span><b class="num" id="devId" style="letter-spacing:.06em">'+esc(L.dev)+'</b></div>'+
   '<div class="split"><button class="btn ghost" type="button" data-act="copy" data-target="devId">Salin ID</button>'+(wa?'<button class="btn ghost" type="button" data-act="ext" data-url="'+esc(wa)+'">Minta kode via WA</button>':'')+'</div>'+
   (CFG.KONTAK_NAMA||CFG.KONTAK_WA?'<small style="color:var(--muted)">Hubungi '+esc(CFG.KONTAK_NAMA||"penjual")+(CFG.KONTAK_WA?' di '+esc(CFG.KONTAK_WA):'')+' dan kirim ID perangkat di atas.</small>':'')+
-  '<form class="stack" id="fAkt"><label class="f">Kode aktivasi<input id="aKey" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" style="text-transform:uppercase"></label><button class="btn" type="submit">Aktifkan</button></form></section>';
+  '<form class="stack" id="fAkt"><label class="f">Kode aktivasi<textarea id="aKey" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><button class="btn" type="submit">Aktifkan</button></form></section>';
 }
 
 /* ---------- derived ---------- */
@@ -607,7 +599,7 @@ function licSection(){
   const wa=waLisensi();
   return '<div class="sec"><span class="label">Lisensi</span><div class="stat"><span class="pill a">Masa coba: sisa '+L.sisa+' hari</span><small style="display:block;color:var(--muted);margin-top:6px">ID perangkat <b class="num" id="devId2">'+esc(L.dev)+'</b></small></div>'+
    '<div class="split"><button class="btn ghost sm" type="button" data-act="copy" data-target="devId2">Salin ID</button>'+(wa?'<button class="btn ghost sm" type="button" data-act="ext" data-url="'+esc(wa)+'">Minta kode via WA</button>':'')+'</div>'+
-   '<form class="stack" id="fAkt2"><label class="f">Kode aktivasi<input id="aKey2" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" style="text-transform:uppercase"></label><button class="btn" type="submit">Aktifkan</button></form></div>';
+   '<form class="stack" id="fAkt2"><label class="f">Kode aktivasi<textarea id="aKey2" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><button class="btn" type="submit">Aktifkan</button></form></div>';
 }
 
 /* ---------- events ---------- */
