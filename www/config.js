@@ -11,7 +11,7 @@ window.CATAT_CONFIG = {
   // (menu Kunci → Salin kunci publik). Kunci publik aman dibagikan: dengan
   // kunci ini aplikasi hanya bisa MEMERIKSA kode aktivasi, tidak bisa membuatnya.
   // Selama masih kosong, masa coba tetap berjalan tetapi kode aktivasi belum bisa dipakai.
-  LICENSE_PUBLIC_KEY: "",
+  LICENSE_PUBLIC_KEY: "3T2ZWWJEXDRW0WCM3DCECD0ME544YX2ZHNQ21WSQERSE3WTYADGG",
 
   // Kontak penjual yang tampil di layar aktivasi.
   KONTAK_NAMA: "Bali IT Solutions",
