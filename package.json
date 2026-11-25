@@ -1,6 +1,6 @@
 {
   "name": "catat-toko",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Aplikasi pencatatan toko UMKM: kasir, utang-piutang, buku kas, stok, dan laporan.",
   "author": "Bali IT Solutions",
   "license": "UNLICENSED",
@@ -33,7 +33,7 @@
     "productName": "Catat Toko",
     "copyright": "Bali IT Solutions",
     "directories": { "output": "dist" },
-    "files": ["main.js", "www/**/*", "assets/icon.png", "package.json"],
+    "files": ["main.js", "preload.js", "www/**/*", "assets/icon.png", "package.json"],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "assets/icon.png",
