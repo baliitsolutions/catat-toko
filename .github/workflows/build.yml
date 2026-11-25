@@ -29,6 +29,7 @@ jobs:
           name: CatatToko-Windows
           path: dist/*.exe
           if-no-files-found: error
+          retention-days: 7
 
   lisensi:
     name: Pembuat Lisensi (.exe)
@@ -52,6 +53,7 @@ jobs:
           name: PembuatLisensi-Windows
           path: lisensi/dist/*.exe
           if-no-files-found: error
+          retention-days: 7
 
   android:
     name: APK Android
@@ -103,6 +105,7 @@ jobs:
           name: CatatToko-Android
           path: CatatToko.apk
           if-no-files-found: error
+          retention-days: 7
 
   release:
     name: Rilis (saat push tag v*)
