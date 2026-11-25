@@ -252,10 +252,16 @@ function licState(){
   const sisa=Math.ceil((first+CFG.TRIAL_DAYS*DAY-Date.now())/DAY);
   return{status:sisa>0?"trial":"habis",sisa:Math.max(0,sisa),dev};
 }
+/* activate: "" jika berhasil, selain itu pesan penyebabnya */
+function kunciId(){return (CFG.LICENSE_PUBLIC_KEY||"").slice(0,8)||"-"}
 function activate(input){
   const code=String(input||"").toUpperCase().replace(/[^0-9A-Z]/g,"");
-  if(!verifyKey(code,deviceId()))return false;
-  try{localStorage.setItem("catattoko.key",code)}catch(_){}return true;
+  if(!CFG.LICENSE_PUBLIC_KEY)return "Aplikasi ini versi lama tanpa kunci lisensi. Install versi terbaru dari penjual.";
+  if(!window.nacl)return "Komponen lisensi tidak termuat. Install ulang aplikasi.";
+  if(!code)return "Tempel kode aktivasi dulu.";
+  if(code.length<103)return "Kode belum lengkap ("+code.length+" dari 103 huruf). Salin seluruh kode dari pesan WhatsApp.";
+  if(!verifyKey(code,deviceId()))return "Kode tidak cocok untuk ID "+deviceId()+" dan kunci "+kunciId()+". Pastikan penjual membuat kode untuk ID ini dengan kunci yang sama.";
+  try{localStorage.setItem("catattoko.key",code)}catch(_){}return "";
 }
 function waLisensi(){const n=waNum(CFG.KONTAK_WA);return n?"https://wa.me/"+n+"?text="+encodeURIComponent("Halo, saya ingin aktivasi "+CFG.APP_NAME+". ID perangkat saya: "+deviceId()):""}
 function vLock(){
@@ -265,7 +271,7 @@ function vLock(){
   '<div class="stat"><span class="label">ID perangkat</span><b class="num" id="devId" style="letter-spacing:.06em">'+esc(L.dev)+'</b></div>'+
   '<div class="split"><button class="btn ghost" type="button" data-act="copy" data-target="devId">Salin ID</button>'+(wa?'<button class="btn ghost" type="button" data-act="ext" data-url="'+esc(wa)+'">Minta kode via WA</button>':'')+'</div>'+
   (CFG.KONTAK_NAMA||CFG.KONTAK_WA?'<small style="color:var(--muted)">Hubungi '+esc(CFG.KONTAK_NAMA||"penjual")+(CFG.KONTAK_WA?' di '+esc(CFG.KONTAK_WA):'')+' dan kirim ID perangkat di atas.</small>':'')+
-  '<form class="stack" id="fAkt"><label class="f">Kode aktivasi<textarea id="aKey" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><button class="btn" type="submit">Aktifkan</button></form></section>';
+  '<form class="stack" id="fAkt"><label class="f">Kode aktivasi<textarea id="aKey" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><div id="aErr" style="color:var(--red);font-size:13px;font-weight:600"></div><button class="btn" type="submit">Aktifkan</button></form><small style="color:var(--muted)">Kunci lisensi: '+esc(kunciId())+'</small></section>';
 }
 
 /* ---------- derived ---------- */
@@ -311,7 +317,7 @@ function render(){
   $("#banner").innerHTML=b;
   const v=$("#view");
   document.querySelector("nav.bottom").hidden=LIC.status==="habis";$("#btnSettings").hidden=LIC.status==="habis";
-  if(LIC.status==="habis"){v.innerHTML=vLock();$("#cartbar").innerHTML="";const f=$("#fAkt");f.addEventListener("submit",ev=>{ev.preventDefault();if(activate($("#aKey").value)){toast("Aplikasi aktif. Terima kasih!");render()}else toast("Kode aktivasi tidak cocok dengan ID perangkat ini")});return}
+  if(LIC.status==="habis"){v.innerHTML=vLock();$("#cartbar").innerHTML="";const f=$("#fAkt");f.addEventListener("submit",ev=>{ev.preventDefault();const er=activate($("#aKey").value);if(!er){toast("Aplikasi aktif. Terima kasih!");render()}else{$("#aErr").textContent=er}});return}
   if(S.mode==="loading"){v.innerHTML='<div class="card empty">Memuat data toko…</div>';$("#cartbar").innerHTML="";return}
   v.innerHTML=({beranda:vBeranda,kasir:vKasir,utang:vUtang,kas:vKas,stok:vStok,laporan:vLaporan})[S.tab]();
   const ci=cartItems();
@@ -542,7 +548,7 @@ function sheetSettings(){
    '<div class="split"><button class="btn ghost" type="button" data-act="backup">Buat cadangan</button><button class="btn ghost" type="button" data-act="restore">Pulihkan cadangan</button></div><input type="file" id="fRestore" accept=".json,application/json" hidden>'+
    (hasContoh?'<button class="btn ghost" type="button" id="btnClr" style="color:var(--red)">Hapus semua data contoh</button>':'')+(isEmptyStore()?'<button class="btn ghost" type="button" data-act="seed">Isi data contoh</button>':'')+'</div>'+licSection(),sh=>{
     const fr=sh.querySelector("#fRestore");fr.addEventListener("change",()=>restoreFile(fr.files[0]));
-    const fa=sh.querySelector("#fAkt2");if(fa)fa.addEventListener("submit",ev=>{ev.preventDefault();if(activate($("#aKey2").value)){toast("Aplikasi aktif. Terima kasih!");closeSheet();render()}else toast("Kode aktivasi tidak cocok dengan ID perangkat ini")});
+    const fa=sh.querySelector("#fAkt2");if(fa)fa.addEventListener("submit",ev=>{ev.preventDefault();const er=activate($("#aKey2").value);if(!er){toast("Aplikasi aktif. Terima kasih!");closeSheet();render()}else{$("#aErr2").textContent=er}});
     sh.querySelector("#fToko").addEventListener("submit",ev=>{ev.preventDefault();guard(ev.submitter,async()=>{await saveToko({nama:$("#tNama").value.trim()||"Toko Saya",minStok:num($("#tMin").value)||5});closeSheet();toast("Pengaturan disimpan")})});
     const c=sh.querySelector("#btnClr");if(c)c.addEventListener("click",()=>confirmBtn(c,"Ketuk lagi: hapus data contoh",()=>guard(c,async()=>{for(const col of COLS)for(const x of S[col].filter(y=>y.contoh))await delDoc(col,x.id);closeSheet();toast("Data contoh dihapus")})));
   });
@@ -599,7 +605,7 @@ function licSection(){
   const wa=waLisensi();
   return '<div class="sec"><span class="label">Lisensi</span><div class="stat"><span class="pill a">Masa coba: sisa '+L.sisa+' hari</span><small style="display:block;color:var(--muted);margin-top:6px">ID perangkat <b class="num" id="devId2">'+esc(L.dev)+'</b></small></div>'+
    '<div class="split"><button class="btn ghost sm" type="button" data-act="copy" data-target="devId2">Salin ID</button>'+(wa?'<button class="btn ghost sm" type="button" data-act="ext" data-url="'+esc(wa)+'">Minta kode via WA</button>':'')+'</div>'+
-   '<form class="stack" id="fAkt2"><label class="f">Kode aktivasi<textarea id="aKey2" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><button class="btn" type="submit">Aktifkan</button></form></div>';
+   '<form class="stack" id="fAkt2"><label class="f">Kode aktivasi<textarea id="aKey2" rows="4" placeholder="Tempel kode aktivasi yang Anda terima lewat WhatsApp" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea></label><div id="aErr2" style="color:var(--red);font-size:13px;font-weight:600"></div><button class="btn" type="submit">Aktifkan</button></form><small style="color:var(--muted)">Kunci lisensi: '+esc(kunciId())+'</small></div>';
 }
 
 /* ---------- events ---------- */
