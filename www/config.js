@@ -15,5 +15,5 @@ window.CATAT_CONFIG = {
 
   // Kontak penjual yang tampil di layar aktivasi.
   KONTAK_NAMA: "Bali IT Solutions",
-  KONTAK_WA: "08xxxxxxxxxx"
+  KONTAK_WA: "+62 852-3865-1234"
 };
