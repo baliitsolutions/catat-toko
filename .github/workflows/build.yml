@@ -92,9 +92,25 @@ jobs:
           )
           if "BLUETOOTH_CONNECT" not in s:
               s = s.replace("</manifest>", perms + "</manifest>")
+          extra = (
+              '    <uses-permission android:name="android.permission.CAMERA" />\n'
+              '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n'
+          )
+          if "android.permission.CAMERA" not in s:
+              s = s.replace("</manifest>", extra + "</manifest>")
+          if "requestLegacyExternalStorage" not in s:
+              s = s.replace("<application", '<application android:requestLegacyExternalStorage="true"', 1)
+          if "com.google.mlkit.vision.DEPENDENCIES" not in s:
+              s = s.replace("</application>", '        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>\n    </application>')
           open(p, "w").write(s)
+          g = "android/app/build.gradle"
+          t = open(g).read()
+          if "dataBinding" not in t:
+              t = t.replace("android {", "android {\n    buildFeatures {\n        dataBinding true\n    }", 1)
+          open(g, "w").write(t)
           PY
-          grep -n BLUETOOTH android/app/src/main/AndroidManifest.xml
+          grep -nE 'BLUETOOTH|CAMERA|mlkit|Legacy' android/app/src/main/AndroidManifest.xml
+          grep -n -A2 buildFeatures android/app/build.gradle
       - name: Siapkan kunci tanda tangan
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 -d > android/app/catattoko.jks

@@ -1,6 +1,7 @@
 // Jendela aplikasi Windows (Electron) untuk Catat Toko.
 const { app, BrowserWindow, shell, Menu, ipcMain } = require("electron");
 const path = require("path");
+const fs = require("fs");
 
 // Satu aplikasi saja yang boleh terbuka, supaya data tidak bentrok.
 if (!app.requestSingleInstanceLock()) {
@@ -76,6 +77,28 @@ ipcMain.handle("ct:print", async (_e, opts) => {
   } finally {
     setTimeout(() => { if (!w.isDestroyed()) w.close(); }, 500);
   }
+});
+
+// ---------- Cadangan otomatis ----------
+function backupDir() { return path.join(app.getPath("documents"), "CatatToko", "Cadangan"); }
+ipcMain.handle("ct:autoBackup", async (_e, { name, json }) => {
+  try {
+    const dir = backupDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const safe = String(name || "cadangan.json").replace(/[^a-zA-Z0-9._-]/g, "_");
+    fs.writeFileSync(path.join(dir, safe), String(json || ""), "utf8");
+    const files = fs.readdirSync(dir).filter((f) => /^cadangan-otomatis-.*\.json$/.test(f)).sort();
+    for (const f of files.slice(0, Math.max(0, files.length - 30))) fs.unlinkSync(path.join(dir, f));
+    return { ok: true, dir };
+  } catch (err) {
+    return { ok: false, reason: String((err && err.message) || err) };
+  }
+});
+ipcMain.handle("ct:openBackupDir", async () => {
+  const dir = backupDir();
+  fs.mkdirSync(dir, { recursive: true });
+  await shell.openPath(dir);
+  return dir;
 });
 
 app.on("second-instance", () => {

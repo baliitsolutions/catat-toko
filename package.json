@@ -1,6 +1,6 @@
 {
   "name": "catat-toko",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Aplikasi pencatatan toko UMKM: kasir, utang-piutang, buku kas, stok, dan laporan.",
   "author": "Bali IT Solutions",
   "license": "UNLICENSED",
@@ -18,6 +18,7 @@
     "@capacitor/android": "6.2.0",
     "@capacitor/app": "6.0.2",
     "@capacitor/browser": "6.0.4",
+    "@capacitor-mlkit/barcode-scanning": "6.2.0",
     "@capacitor/core": "6.2.0",
     "@capacitor/filesystem": "6.0.2",
     "@capacitor/share": "6.0.3"

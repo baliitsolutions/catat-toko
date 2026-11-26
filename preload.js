@@ -3,5 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("catatDesktop", {
   printers: () => ipcRenderer.invoke("ct:printers"),
-  print: (opts) => ipcRenderer.invoke("ct:print", opts)
+  print: (opts) => ipcRenderer.invoke("ct:print", opts),
+  autoBackup: (data) => ipcRenderer.invoke("ct:autoBackup", data),
+  openBackupDir: () => ipcRenderer.invoke("ct:openBackupDir")
 });
